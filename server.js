@@ -23,6 +23,19 @@ server.get("/", (req, res) => {
     res.send('Welcome Auth Traveler!');
   });
 
+server.post('/api/register', (req, res) => {
+    let user = req.body
+});
+
+server.post('/api/login', (req, res) => {
+    let {username, password} = req.body;
+});
+
+server.get('/api/users', (req, res) => {
+    
+});
+
+
 // Error
 server.use(function(req, res) {
     res
