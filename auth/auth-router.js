@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const Users = require('../users/users-model');
 
@@ -10,10 +11,10 @@ router.post('/register', async (req, res) => {
   // DB HELPER
   try {
     if (credentials.username && credentials.password) {
-        const hash = encrypt.hashSync(credentials.password, 12);
+        const hash = bcrypt.hashSync(credentials.password, 12);
         credentials.password = hash;
 
-        const newUsers = await Users.add(credentials);
+     await Users.add(credentials);
       res.status(201).json(credentials);
     } else {
         res.status(400).json({ error: "Please include a username and password" }) 
@@ -24,14 +25,14 @@ router.post('/register', async (req, res) => {
 
   });
   // POST - LOGIN
-router.post('/api/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     let {username, password} = req.body;
 
     try {
         if (username && password) {
-          const user = await Users.findBy({ username: username });
-
-          if (user && encrypt.compareSync(password, user.password)) 
+          const user = await Users.findBy({username}).first();
+          
+          if (user && bcrypt.compareSync(password, user.password)) 
           {req.session.user = user;
             res.status(200).json({ message: `Welcome ${user.username}`});
           } else {
