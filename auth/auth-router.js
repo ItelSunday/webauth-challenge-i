@@ -7,45 +7,56 @@ const Users = require('../users/users-model');
 // POST - REGISTER
 router.post('/register', async (req, res) => {
     let credentials = req.body
-
-  // DB HELPER
-  try {
-    if (credentials.username && credentials.password) {
-        const hash = bcrypt.hashSync(credentials.password, 12);
+    const hash = bcrypt.hashSync(credentials.password, 12);
         credentials.password = hash;
 
-     await Users.add(credentials);
-      res.status(201).json(credentials);
-    } else {
-        res.status(400).json({ error: "Please include a username and password" }) 
-      }
-    } catch (error) {
-      res.status(500).json({messge: 'this username has been taken'});
-    }
-
+  // DB HELPER 
+     Users.add(credentials)
+     .then (credentials => {
+      res.status(201).json(credentials);    
+    })
+    .catch(error => {
+        res.status(500).json({messge: 'this username has been taken'});
+      });
   });
+
+
   // POST - LOGIN
 router.post('/login', async (req, res) => {
     let {username, password} = req.body;
 
-    try {
-        if (username && password) {
-          const user = await Users.findBy({username}).first();
-          
-          if (user && bcrypt.compareSync(password, user.password)) 
-          {req.session.user = user;
-            res.status(200).json({ message: `Welcome ${user.username}`});
+    Users.findBy({username})
+    .first()
+    .then(user => {
+        const token = generateToken(user); 
+        if(user && bcrypt.compareSync(password, user.password)) {
+            res.status(200).json({
+              message: `Welcome ${user.username}`,
+              token
+            })
           } else {
-            res.status(401).jason({ message: "Invalid credentials"})
-          }
-        } else {
-          res.status(400).json({ error: "username and password required." }) 
-        }
-      } catch (error) {
-        res.status(500).json(error);
+            res.status(401).json({ message: "Invalid credentials"})
       }
+    }) .catch (error => {
+        res.status(500).json({message: 'login error'});
+      });
     });
+    
+    
+    // Generate Token
+    function generateToken(user) {
+        const payload = {
+            subject: user.id,
+            username: user.username
+        };
+        const options = {
+            expiresIn: 'Id'
+        }
+        return jwt.sign(payload, secret, options);
+    }
+        
   
+    // GET - LOGOUT
   router.get('/logout', (req, res) => {
   
     if(req.session.user) {
